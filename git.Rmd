@@ -1,8 +1,8 @@
 ---
 title: "Evaluation_5"
-author: "Git"
+author: "Christiane"
 date: "2 avril 2019"
-output: word_document
+output: html_document
 ---
 
 
@@ -11,10 +11,14 @@ output: word_document
 3. créer un modèle ETS sur les données d'entraînement, puis projeter la prévision de CO2 atmosphérique pour comparer aux données test
 4. effectuer une analyse des résidus
 Commenter: le modèle est-il fiable? Comment pourrait-il être amélioré?
-Vous devez me remettre un lien vers un répertoire git de votre choix (GitHub, GitLab, etc.) comprenant un code reproductible de votre démarche en format R-markdown.
+Vous devez me remettre un lien vers un répertoire git de votre choix (GitHub, GitLab, etc.) comprenant un code reproductible de votre démarche en format R-markdown. 
+
+[Evaluation5](https://github.com/chtdelia/evaluation5/blob/master/git.Rmd)
 
 
-```{setwd("C:/Users/Utilisateur/Dropbox/Analyse") 
+
+```{r}
+setwd("C:/Users/Utilisateur/Dropbox/Analyse") 
 
 hawai <- read_csv("CodeR/_Evaluation5/hawai.csv")
 
@@ -51,57 +55,10 @@ hawai_fc %>% autoplot()
 
 checkresiduals(hawai_ets) 
   
-  }
-
 ```
 
-
-```{ }
-
-```
-
-
-
-
-```{}
-
-```
-
-
-
-
-```{}
-
-```
-
-
-
-```{}
-
-```
-
- 
-
-
-
-
-```{r, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-```
-
-
-```{r }
-
-```
-
-
-
-
-
-```{r , echo=FALSE}
-
-
+```{r hawai_model, echo=FALSE}
+plot(hawai_model)
 ```
 
 
