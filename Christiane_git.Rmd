@@ -1,19 +1,18 @@
 ---
 title: "Evaluation_5"
 author: "Christiane"
-date: "2 avril 2019"
+date: "5 avril 2019"
 output: github_document
 ---
 
-
-1. créer une série temporelle du CO2 à partir des données de hawai.csv
-2. séparer la série en parties d'entraînement (environ 70% des données) et en partie test
-3. créer un modèle ETS sur les données d'entraînement, puis projeter la prévision de CO2 atmosphérique pour comparer aux données test
-4. effectuer une analyse des résidus
+1. Créer une série temporelle du CO2 à partir des données de hawai.csv
+2. Séparer la série en parties d'entraînement (environ 70% des données) et en partie test
+3. Créer un modèle ETS sur les données d'entraînement, puis projeter la prévision de CO2 atmosphérique pour comparer aux données test
+4. Effectuer une analyse des résidus
 Commenter: le modèle est-il fiable? Comment pourrait-il être amélioré?
 Vous devez me remettre un lien vers un répertoire git de votre choix (GitHub, GitLab, etc.) comprenant un code reproductible de votre démarche en format R-markdown. 
 
-[Evaluation5](https://github.com/chtdelia/evaluation5/blob/master/git.Rmd)
+[Evaluation5_Christiane]("https://github.com/chtdelia/evaluation5/blob/master/Christiane_git.Rmd")
 
 
 ```{r}
@@ -56,8 +55,6 @@ checkresiduals(hawai_ets)
   
 ```
 
-```{r hawai_model, echo=FALSE}
-plot(hawai_model)
-```
+
 
 
