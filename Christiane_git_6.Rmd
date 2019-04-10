@@ -1,0 +1,159 @@
+---
+title: "Evaluation_6"
+author: "Christiane"
+date: "`r format(Sys.Date())`"
+output: pdf_document
+---
+
+Production de bananes polaires
+L'Association québécoise des producteurs de bananes polaires (AQPBP) a recensé la productivité de chacun des sites (en Mg par hectares) depuis plusieurs années. Des indicateurs météo ont été consignés sur la durée des saisons de croissance. Les médianes des indicateurs et des rendements compilés au cours des années se trouvent dans le tableau banane.csv.
+1. L'AQPBP vous mandate de créer un modèle de prédiction du rendement en fonction de la météo et de la position.
+Créez un modèle d'autoapprentissage avec entraînement et test avec la méthode de votre choix. Par exemple, comme ceci.
+id_tr <- createDataPartition(banane$yield, p = 0.7, list = FALSE)
+banane_tr <- banane[id_tr, ]
+banane_te <- banane[-id_tr, ]
+ml_mod <- train(yield ~ lon + lat + degree_days + cumul_precip + sdi,
+             data = banane_tr,
+             method = "celle-que-vous-desirez") # mettre à l'échelle si nécessaire
+Le modèle est-il fiable?
+2. Un organisme responsable des prévisions climatiques s'attend à ce que, d'ici 2050, les degrés-jours augmentent de 15%, les précipitations totales augmentent de 8% et que l'indice sdi diminue de 12% de manière uniforme sur tout le territoire de culture au Québec. L'AQPBP vous demande ce qui adviendra de la production totale de bananes polaires au Québec.
+Calculez d'abord la production totale pour tous les sites (somme des rendements), sachant qu'il y a 6000 hectares en culture (multiplier la productivité en Mg/ha  par 6000 ha). Prenez le tableau initial et multipliez la colonne degrés-jour par 1.15, la colonne des précipitations par 1.08 et la colonne des sdi par 0.88. Puis utilisez la fonction predict pour prédire le rendement à l'aide du modèle que vous avez créé en (1). Enfin, effectuez la somme des rendements prédits (en multipliant par 6000 ha). Y aurait-il augmentation ou diminution des rendements? *Une augmentaion, si mes calculs sont corrects.*
+3. Enfin, l'AQPBP aimerait avoir une carte de prédiction spatiale des précipitations cumulées actuelles (cumul_precip).
+Utilisez les codes fournis dans le chapitre sur les données géospatiales pour effectuer une prédiction spatiale. Utilisez la méthode de calcul que vous désirez (processus gaussien ou autre). Ne tentez pas de créer le meilleur modèle possible en essayant plusieurs algorithmes: créer le vôtre, commentez-le et donnez des pistes pour l'amélioration. Créez une grille de points sur lesquels les précipitations seront prédites (pas nécessairement avec sf, expand.grid suffira), puis créez une carte avec ggmap.
+Soumettez votre rapport dans un PDF généré depuis un fichier Rmd, accompagné du zip de vos calculs et de vos données (output: pdf_document)
+
+
+
+[Evaluation6_Christiane]("https://github.com/chtdelia/evaluation5/blob/master/Christiane_git_6.Rmd")
+
+```{r}
+library(sf)
+library(ggmap)
+library(caret)
+library(kknn)
+library(tidyverse)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(lattice)
+library(compositions)
+library(agridat)
+library(expsmooth)
+library(forecast)
+library(tinytex)
+
+setwd("C:/Users/Utilisateur/Dropbox/Analyse") 
+banane <- read_csv("CodeR/_Evaluation6/banane.csv")
+
+
+bananee <- banane %>% dplyr::select(-station_name)
+id_tr <- createDataPartition(bananee$yield, p = 0.7, list = FALSE) 
+banane_tr <- bananee[id_tr, ]
+banane_te <- bananee[-id_tr, ]
+ml_mod <- caret::train(yield ~ lon + lat + degree_days + cumul_precip + sdi,
+                data = banane_tr,
+                method = "kknn") 
+
+kknn_grid <- expand.grid(kmax = 3:6, 
+          distance = 1:2, 
+          kernel = c("rectangular", "gaussian", "optimal"))
+
+ctrl <- trainControl(method="repeatedcv", repeats = 5)
+
+#set.seed()
+clf  <- train(yield ~ .,
+              data = banane_tr,
+              method = "kknn",
+              tuneGrid = kknn_grid,
+              trainControl=ctrl)
+clf
+
+pred_tr <- predict(clf)
+pred_te <- predict(clf, newdata = banane_te)
+
+tablepred <- table(banane_tr$yield, pred_tr)
+
+
+yield_sum <- bananee %>%
+  sum(bananee$yield) 
+ yield_total <- yield_sum*6000
+
+ banane_mult <- (data = bananee +
+  bananee$degree_days*1.15 +
+  bananee$cumul_precip*1.08 +
+  bananee$sdi*0.88)
+ 
+ ml_yield <- caret::train(yield ~ lon + lat + degree_days + cumul_precip + sdi,
+                       data = banane_mult,
+                       method = "kknn")
+
+ yield_predict_sum <- (data = banane_mult +
+                       sum(banane_mult$yield))
+yield_predict_total <- yield_predict_sum*6000
+
+ 
+banane_geo <- bananee %>%
+st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+st_transform("+proj=longlat +datumNAD83")
+
+
+banane_geo %>% st_coordinates() %>% summary()
+
+banane_map <- get_stamenmap(bbox=c(left = -80.50, right = -61.70, bottom = 42, top = 51), 
+              zoom=7, maptype="terrain")
+
+banane_coord <- banane_geo %>%
+  st_coordinates()%>%
+  as_tibble() %>%
+  mutate(cumul_precip = banane_geo$cumul_precip,
+         degree_days = banane_geo$degree_days)
+
+ggmap(banane_map) +
+  geom_point(data = banane_coord, aes(x=X, y=Y, colour = cumul_precip)) +
+  scale_colour_viridis_c(option = "inferno", direction = -1) +
+  theme_bw() 
+
+
+library("caret")
+banane_dd <- bananee %>% 
+  dplyr::select(lon, lat, cumul_precip) %>% 
+  drop_na()
+banane_dd_sc <- banane_dd %>% 
+  mutate(cumul_precip = (cumul_precip - mean(cumul_precip))/sd(cumul_precip))
+train_id_cumul <- createDataPartition(y = banane_dd_sc$cumul_precip, p = 0.7, list = FALSE)
+
+library("kernlab")
+
+dd_gp <- gausspr(x = banane_dd_sc[train_id_cumul, c("lon", "lat")],
+                 y = banane_dd_sc[train_id_cumul, "cumul_precip"],
+                 kernel = "rbfdot",
+                 #kpar = list(sigma = 01), # laisser optimiser
+                 variance.model = TRUE,
+                 scale = TRUE,
+                 var = 0.1,
+                 cross = 5)
+
+
+pred_dd_tr <- predict(dd_gp)
+pred_dd_te <- predict(dd_gp, newdata =  banane_dd_sc[-train_id_cumul, c("lon", "lat")])
+
+par(mfrow = c(1, 2))
+plot(banane_dd_sc$cumul_precip[train_id_cumul], pred_dd_tr, main = "Train prediction", xlab = "mesuré", ylab = "prédit")
+abline(0, 1, col="red")
+plot(banane_dd_sc$cumul_precip[-train_id_cumul], pred_dd_te, main = "Test prediction", xlab = "mesuré", ylab = "prédit")
+abline(0, 1, col="red")
+
+grid <- expand.grid(lon = seq(from = -80.50, to = -61.70, by = 0.25),
+                    lat = seq(from = 42, to = 51, by = 0.25))
+
+grid <- grid %>% 
+  mutate(pred_dd_mean = predict(dd_gp, newdata = ., type = "response") * sd(banane_dd$cumul_precip) + mean(banane_dd$cumul_precip),
+         pred_dd_sd = predict(dd_gp, newdata = ., type = "sdeviation") * sd(banane_dd$cumul_precip))
+head(grid)
+
+
+  
+```
+
